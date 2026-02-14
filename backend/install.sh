@@ -51,7 +51,9 @@ sudo yum update -y
 sudo yum install -y java-11-amazon-corretto-devel wget
 
 # ----------- Install MySQL client -----------
-sudo yum install -y mariadb || true
+sudo yum install mariadb-server -y
+# or for Amazon Linux 2023
+sudo dnf install mariadb105-server -y
 
 # ----------- Download JDBC -----------
 cd "$INSTALL_DIR"

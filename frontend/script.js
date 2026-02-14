@@ -3,7 +3,7 @@
  * POST /enquiry — submit | GET /enquiries — list
  */
 
-const BACKEND_URL = 'http://3.109.181.154:8080';
+const BACKEND_URL = 'http://3.110.187.197:8080';
 
 const form = document.getElementById('enquiry-form');
 const messageBox = document.getElementById('message-box');
@@ -108,7 +108,7 @@ async function loadEnquiries() {
         }
         renderEnquiries(data);
     } catch (err) {
-        showEnquiriesError('Could not reach backend. Check EC2 IP and that the server is running.');
+        showEnquiriesError('Could not reach backend. Check EC2 IP and that the server is running.'+ BACKEND_URL);
     }
 }
 
