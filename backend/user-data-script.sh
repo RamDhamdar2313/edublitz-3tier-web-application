@@ -21,7 +21,7 @@ cp -r edublitz-3tier-web-application/backend/* /home/ec2-user/
 # -------- Fix Ownership --------
 chown -R ec2-user:ec2-user /home/ec2-user
 
-# -------- Make Install Executable --------
+# --  ------ Make Install Executable --------
 chmod +x /home/ec2-user/install.sh
 
 # -------- Run Install Script --------
