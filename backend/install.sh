@@ -45,32 +45,48 @@ DB_PORT=${DB_PORT:-3306}
 INSTALL_DIR="/home/ec2-user"
 MYSQL_JAR="mysql-connector-j-8.0.33.jar"
 
-# ----------- Install Java -----------
-echo "Installing Java..."
+# ----------- Install Dependencies -----------
+echo "Installing dependencies..."
 sudo yum update -y
 sudo yum install -y java-11-amazon-corretto-devel wget
+sudo dnf install -y mariadb105
 
-# ----------- Install MySQL client -----------
-sudo yum install mariadb-server -y
-# or for Amazon Linux 2023
-sudo dnf install mariadb105-server -y
-
-# ----------- Download JDBC -----------
+# ----------- Download JDBC Driver -----------
 cd "$INSTALL_DIR"
 if [ ! -f "$MYSQL_JAR" ]; then
-  wget -q "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar" -O "$MYSQL_JAR"
+  echo "Downloading MySQL JDBC driver..."
+  wget -q "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/$MYSQL_JAR"
 fi
 
-# ----------- Compile -----------
+# ----------- Compile Application -----------
 if [ ! -f App.java ]; then
-  echo "App.java not found."
+  echo "ERROR: App.java not found in $INSTALL_DIR"
   exit 1
 fi
 
+echo "Compiling App.java..."
 javac -cp ".:${MYSQL_JAR}" App.java
+
+if [ ! -f App.class ]; then
+  echo "ERROR: Compilation failed. App.class not created."
+  exit 1
+fi
+
 echo "Compilation successful."
 
-# ----------- Create systemd service -----------
+# ----------- Test RDS Connectivity -----------
+echo "Testing RDS connection..."
+if ! mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; then
+  echo "ERROR: Cannot connect to RDS. Check credentials or security group."
+  exit 1
+fi
+
+echo "RDS connection successful."
+
+# ----------- Stop Existing Service -----------
+sudo systemctl stop edublitz-backend 2>/dev/null || true
+
+# ----------- Create systemd Service -----------
 sudo tee /etc/systemd/system/edublitz-backend.service > /dev/null << SVC
 [Unit]
 Description=EduBlitz 3-Tier Backend
@@ -93,12 +109,17 @@ RestartSec=5
 WantedBy=multi-user.target
 SVC
 
+# ----------- Start Service -----------
 sudo systemctl daemon-reload
 sudo systemctl enable edublitz-backend
 sudo systemctl restart edublitz-backend
 
-echo "Backend started via systemd."
-
-echo "Test using:"
-echo "curl -X POST http://localhost:8080/enquiry -d 'name=Test&email=test@test.com&course=AWS&message=Hello'"
+echo ""
+echo "Backend started."
+echo "Check status:"
+echo "  sudo systemctl status edublitz-backend"
+echo ""
+echo "Test locally:"
+echo "  curl http://localhost:8080/"
+echo ""
 echo "=== Install Complete ==="

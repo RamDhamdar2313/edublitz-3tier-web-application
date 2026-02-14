@@ -3,7 +3,7 @@
  * POST /enquiry — submit | GET /enquiries — list
  */
 
-const BACKEND_URL = 'http://3.110.187.197:8080';
+const BACKEND_URL = 'http://13.127.65.139:8080';
 
 const form = document.getElementById('enquiry-form');
 const messageBox = document.getElementById('message-box');
