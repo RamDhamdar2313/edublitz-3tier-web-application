@@ -3,7 +3,7 @@
  * POST /enquiry — submit | GET /enquiries — list
  */
 
-const BACKEND_URL = 'http://3.109.133.64:8080';
+const BACKEND_URL = 'https://d2lj8gtmu4mx8m.cloudfront.net';
 
 const form = document.getElementById('enquiry-form');
 const messageBox = document.getElementById('message-box');

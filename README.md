@@ -63,7 +63,8 @@ Follow these sections in order. Use the **AWS Console** in your chosen region.
 5. **IPv4 CIDR block**: `10.0.0.0/16`
 6. Leave the rest as default.
 7. Click **Create VPC**.
-8. Note your **VPC ID** (e.g. `vpc-0abc123def456`).
+8. After Creation **Go to Actions --> Edit VPC Settings --> `✔️Enable dns hostname`**
+9. Note your **VPC ID** (e.g. `vpc-0abc123def456`).
 
 **What you did:** You created a VPC with address space `10.0.0.0/16`. All other resources will live inside this VPC.
 
@@ -404,12 +405,111 @@ echo "User-data setup completed successfully."
 6. Click the refresh button ***below*** to show the enquiries
 ---
 
+## SECTION 9 :SETTING UP  Cloudfront 
+
+
+### Create Distribution
+
+* Click **Create distribution**. 
+* Select **Single website or app**. 
+* Enter an optional **Distribution name** for tagging.
+### Configure Origin
+
+8 In **Origin**, select **Amazon S3** as **Origin type**. 
+* Click **Browse S3** and choose your S3 bucket (use the bucket's regional domain name  
+* Set **Origin ID** to `s3-origin` . 
+* Choose **Use recommended origin settings** for defaults,  
+*  Ensure your S3 bucket policy allows public reads if needed.
+*   Proceed with **Next**. 
+
+### Set Default Cache Behavior
+
+Under **Default cache behavior** (path pattern `*`):
+- **Viewer protocol policy**: Redirect HTTP to HTTPS.
+- **Allowed HTTP methods**: Must contain  `GET, HEAD, OPTIONS`.
+- **Cache key and origin requests**: Legacy cache settings (no query strings, no cookies).
+- Target the S3 origin ID. 
+
+### Configure Viewer Certificate
+
+Select **CloudFront default certificate** for HTTPS support. 
+
+### Set Restrictions and Price Class
+
+Under **Restrictions**, choose **None** for geo restriction. Use default **Price class** (All edge locations) unless changing.
+
+## Creating Origins For Backend EC2
+
+1. Go to Cloudfront Distribution --> Origin --> Create ORigin 
+2. Configure Settings 
+   1. Path pattern `/enquiries*`
+   2.  Origin and origin groups: Select your EC2 origin: e.g, `ec2-65-0-203-125.ap-south-1.compute.amazonaws.com`
+   3. Compress objects automatically Select: `Yes`
+   4. Viewer Section Viewer protocol policy Select:`Redirect HTTP to HTTPS`
+   5. Allowed HTTP methods Select: `GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE` (Required for APIs)
+   6. Cache HTTP methods Leave default (OPTIONS unchecked unless CORS required)
+   7. Restrict viewer access Select: `No`
+   8. Cache Key and Origin Requests Cache policy Select: `CachingDisabled` (Best practice for API endpoints) 
+   9. Origin request policy Select: `AllViewer`
+   10. Response headers policy Leave empty (unless you need CORS)
+   11. Function Associations Leave all: No association
+3.  Click `Save` changes
+
+
+Wait for distribution status → Deployed
+![](images/image2026-02-15-21-01-00.png)
+##  Create  2 New Behavior 
+
+### /enquiry* behavior  creations
+
+1. Open your CloudFront distribution --> Go to Behaviors
+
+2. Click Create behavior
+   1. Path pattern `/enquiry*` 
+   2. Origin `Select your EC2 origin`
+   3. Viewer Protocol Policy 
+      1. Select:`Redirect HTTP to HTTPS`
+   4. Allowed HTTP Methods Select: GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE
+   5. Cache policy Select: `UseOriginCacheControlHeaders`
+   6. Origin request policy Select: `AllViewer`
+   7. Click Save changes
+![](images/image2026-02-15-20-49-02.png)
+
+### /enquiries* behavior  creations
+
+1. Open your CloudFront distribution --> Go to Behaviors
+
+2. Click Create behavior
+   1. Path pattern `/enquiries*` 
+   2. Origin `Select your EC2 origin`
+   3. Viewer Protocol Policy 
+      1. Select:`Redirect HTTP to HTTPS`
+   4. Allowed HTTP Methods Select: `GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE`
+   5. Cache policy Select: `UseOriginCacheControlHeaders`
+   6. Origin request policy Select: `AllViewer`
+   7. Click Save changes
+   ![](images/image2026-02-15-20-58-36.png)
+
+
+
+
+## Additional Settings
+
+* Set **Default root object** to `index.html`. 
+* Enable the distribution. Review settings and click **Create distribution**. 
+* Wait for deployment (status changes to **Enabled**).
+
+Your distribution domain (e.g., `d123456.cloudfront.net`)  
+
+---
 ## SECTION 10: Test Application
 
 1. Open your browser and go to: **https://YOUR_CLOUDFRONT_DOMAIN** (e.g. `https://d123abc.cloudfront.net`).
 2. You should see the **enquiry form** with fields: Name, Email, Course, Message, and Submit.
 3. Fill the form and click **Submit**.
 4. You should see: **"Enquiry submitted successfully"**.
+   ![](images/image2026-02-15-20-28-08.png)
+   ![](images/image2026-02-15-20-27-38.png)
 5. If you see an error:
    - Check that **script.js** has the correct EC2 public IP in **BACKEND_URL** (and that you re-uploaded script.js to S3).
    - Check that the EC2 security group allows **port 8080** from `0.0.0.0/0`.
@@ -417,29 +517,27 @@ echo "User-data setup completed successfully."
 
 **What you did:** You verified the full flow: User → CloudFront → S3 (form) → Browser sends form to EC2 → EC2 inserts into RDS.
 
----
-
-## SECTION 11: Verify Database
-
-1. SSH into your EC2 instance:
-   ```bash
-   ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
-   ```
-2. Connect to RDS from EC2 using the MySQL client (use your RDS endpoint and password):
-   ```bash
-   mysql -h YOUR_RDS_ENDPOINT -u admin -p edublitz
-   ```
-   Enter the RDS master password when prompted.
-3. Run:
-   ```sql
-   SELECT * FROM enquiries;
-   ```
-4. You should see the enquiry you submitted (id, name, email, course, message, created_at).
-5. Type `exit` to leave the MySQL client.
-
-**What you did:** You confirmed that form data is stored in the RDS MySQL database.
 
 ---
+## Final Completion (Important) 
+
+* update Script.js with cloudfront domain Name Endpoint with 
+  ```bash
+  const BACKEND_URL = 'https://d2lj8gtmu4mx8m.cloudfront.net';
+  ```
+* Check the script.js cloudfron is using before retrying
+  * https://d2lj8gtmu4mx8m.cloudfront.net/script.js
+---
+
+## SECtION 11: Some useful cmd to verify  your project running smoothly on each steps
+
+### Curl cmd to check backend insertion of rows in RDS on EC@ instance 
+```bash
+curl -X POST http://localhost:8080/ \
+-H "Content-Type: application/x-www-form-urlencoded" \
+-d "name=Test&email=test@test.com&course=AWS&message=Hello"
+```
+
 
 ## SECTION 12: Architecture Explanation (VERY SIMPLE)
 
