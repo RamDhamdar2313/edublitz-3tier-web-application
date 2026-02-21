@@ -438,26 +438,19 @@ Select **CloudFront default certificate** for HTTPS support.
 
 Under **Restrictions**, choose **None** for geo restriction. Use default **Price class** (All edge locations) unless changing.
 
-## Creating Origins For Backend EC2
+## Creating Origin For Backend EC2
 
-1. Go to Cloudfront Distribution --> Origin --> Create ORigin 
-2. Configure Settings 
-   1. Path pattern `/enquiries*`
-   2.  Origin and origin groups: Select your EC2 origin: e.g, `ec2-65-0-203-125.ap-south-1.compute.amazonaws.com`
-   3. Compress objects automatically Select: `Yes`
-   4. Viewer Section Viewer protocol policy Select:`Redirect HTTP to HTTPS`
-   5. Allowed HTTP methods Select: `GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE` (Required for APIs)
-   6. Cache HTTP methods Leave default (OPTIONS unchecked unless CORS required)
-   7. Restrict viewer access Select: `No`
-   8. Cache Key and Origin Requests Cache policy Select: `CachingDisabled` (Best practice for API endpoints) 
-   9. Origin request policy Select: `AllViewer`
-   10. Response headers policy Leave empty (unless you need CORS)
-   11. Function Associations Leave all: No association
-3.  Click `Save` changes
+1. Go to Cloudfront Distribution --> Origin --> Create Origin
+2. Paste the Public DNS of EC2 Instance in the `Origin domain` section
+   * ![](images/image2026-02-21-08-19-25.png)
+   * If you can't find the Public DNS in the Instance settings
+   * Go to VPC ---> Select VPC --> Actions ---> Edit VPC Settings --> Enable DNS Hostnames
+   * Now Restart the ec2 to get the Public DNS 
+3. Select `HTTP Only` ---> Port no. 8080
+4. Live the rest as default
+5. Select `Create Origin`
 
-
-Wait for distribution status → Deployed
-![](images/image2026-02-15-21-01-00.png)
+![](images/image2026-02-21-08-16-36.png)
 ##  Create  2 New Behavior 
 
 ### /enquiry* behavior  creations
@@ -593,3 +586,4 @@ Delete resources in this order:
 ---
 
 **EduBlitz 3-Tier Web Application** – Beginner-friendly AWS project: enquiry form → EC2 Java API → RDS MySQL.
+
